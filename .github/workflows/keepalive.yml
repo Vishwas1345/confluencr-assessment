@@ -1,0 +1,28 @@
+name: Keep Render service warm
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: render-keepalive
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    if: vars.RENDER_BASE_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping health endpoint
+        env:
+          RENDER_BASE_URL: ${{ vars.RENDER_BASE_URL }}
+        run: |
+          set -euo pipefail
+          test -n "$RENDER_BASE_URL"
+          curl --fail --silent --show-error --max-time 30 "$RENDER_BASE_URL/" |
+            grep -q '"status":"HEALTHY"'

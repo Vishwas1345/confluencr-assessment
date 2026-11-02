@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Test and tool caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Celery
+celerybeat-schedule*
+celerybeat.pid
+
+# Local data
+*.sqlite3
+*.db
+
+# Logs and editors
+*.log
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
