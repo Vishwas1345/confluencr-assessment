@@ -8,7 +8,6 @@ services:
     dockerCommand: python -m app.render_start
     healthCheckPath: /
     autoDeployTrigger: commit
-    maxShutdownDelaySeconds: 60
     envVars:
       - key: APP_ENV
         value: production
