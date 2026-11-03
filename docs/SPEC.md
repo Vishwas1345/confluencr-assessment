@@ -352,7 +352,7 @@ There is no public `FAILED` or `PENDING` state. The status endpoint returns only
 | Containerization | Docker for web and worker | Reproducible local and cloud execution. |
 | Testing | pytest + HTTP client + Celery test mode/worker + test database | Verifies API contract and asynchronous behavior. |
 
-Detailed module layout, task breakdown, and step-by-step implementation order belong in `PLAN.md` (to be written next).
+Detailed module layout, task breakdown, and step-by-step implementation order are in [`PLAN.md`](./PLAN.md).
 
 ## 12. Risks, assumptions, and open questions
 
@@ -380,4 +380,4 @@ Detailed module layout, task breakdown, and step-by-step implementation order be
 - `Dockerfile`(s) for the API and worker.
 - `.env.example`.
 - Automated tests mapped to the acceptance criteria.
-- `ASSESSMENT_QUESTION.md`, `SPEC.md`, and the forthcoming `PLAN.md` for traceability.
+- `ASSESSMENT_QUESTION.md`, `SPEC.md`, `PLAN.md`, and `TEST_RESULTS.md` for traceability.

@@ -6,6 +6,29 @@ A Python service that accepts transaction webhooks, acknowledges them in well un
 
 **Test results:** [`TEST_RESULTS.md`](./docs/TEST_RESULTS.md) records the live and local runs: 15/15 acceptance checks on the live service, duplicate prevention, no lost transactions, and latency, including a controlled experiment showing that burst latency on the free tier is caused by its 0.1 CPU allowance.
 
+## Try it live
+
+No setup needed; paste into a terminal (macOS/Linux shell):
+
+```bash
+BASE=https://confluencr-assessment-22vd.onrender.com
+TXN=txn_demo_$(date +%s)
+BODY="{\"transaction_id\":\"$TXN\",\"source_account\":\"acc_user_789\",\"destination_account\":\"acc_merchant_456\",\"amount\":1500,\"currency\":\"INR\"}"
+
+curl -s "$BASE/"                                                                   # health
+curl -s -X POST "$BASE/v1/webhooks/transactions" -H "Content-Type: application/json" -d "$BODY"   # 202 ACCEPTED
+curl -s "$BASE/v1/transactions/$TXN"                                               # "status": "PROCESSING"
+curl -s -o /dev/null -w "%{http_code}\n" -X POST "$BASE/v1/webhooks/transactions" \
+  -H "Content-Type: application/json" -d "$BODY"                                   # duplicate: 202, no new row
+sleep 32 && curl -s "$BASE/v1/transactions/$TXN"                                   # "status": "PROCESSED"
+```
+
+Or run the full acceptance check (Python 3.9+, standard library only, no install):
+
+```bash
+python3 scripts/acceptance_check.py --base-url https://confluencr-assessment-22vd.onrender.com --wait-seconds 90
+```
+
 ## Architecture
 
 ```text
@@ -104,7 +127,36 @@ Errors:
 
 ## Local development
 
-Prerequisites: Docker, Docker Compose, and Python 3.12.
+### Quick start (Docker, any OS)
+
+Prerequisites: Docker with Docker Compose. This runs PostgreSQL, Redis, the API and the worker:
+
+```bash
+docker compose up -d --build
+docker compose run --rm api alembic upgrade head      # create the table (first run only)
+python3 scripts/acceptance_check.py --base-url http://localhost:8000 --wait-seconds 90
+```
+
+The API is at http://localhost:8000. Follow the worker with `docker compose logs -f worker`, and stop everything with `docker compose down`.
+
+### Without Docker for the app (Python 3.12)
+
+Run only PostgreSQL and Redis in Docker, and the API and worker natively.
+
+macOS / Linux:
+
+```bash
+docker compose up -d postgres redis
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+cp .env.example .env
+alembic upgrade head
+uvicorn app.main:app --reload                                            # terminal 1
+celery -A app.celery_app.celery_app worker --loglevel=INFO --pool=threads --concurrency=4 --beat   # terminal 2
+```
+
+Windows (PowerShell):
 
 ```powershell
 docker compose up -d postgres redis
