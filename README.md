@@ -23,7 +23,7 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST "$BASE/v1/webhooks/transactions
 sleep 32 && curl -s "$BASE/v1/transactions/$TXN"                                   # "status": "PROCESSED"
 ```
 
-Or run the full acceptance check (Python 3.9+, standard library only, no install):
+Or import the Postman collection [`docs/postman/confluencr.postman_collection.json`](./docs/postman/confluencr.postman_collection.json) (11 requests, 37 assertions; [live results](./docs/postman/results-summary.json)), or run the full acceptance check (Python 3.9+, standard library only, no install):
 
 ```bash
 python3 scripts/acceptance_check.py --base-url https://confluencr-assessment-22vd.onrender.com --wait-seconds 90

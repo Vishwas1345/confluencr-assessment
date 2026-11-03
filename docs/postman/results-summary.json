@@ -1,0 +1,461 @@
+{
+  "collection": "Confluencr Transaction Webhook Service",
+  "base_url": "https://confluencr-assessment-22vd.onrender.com",
+  "run_started": 1793694329589,
+  "totals": {
+    "requests": 11,
+    "requests_failed": 0,
+    "assertions": 37,
+    "assertions_failed": 0,
+    "response_time_ms": {
+      "min": 120,
+      "max": 433,
+      "avg": 216
+    }
+  },
+  "requests": [
+    {
+      "name": "1. Health check",
+      "request": {
+        "method": "GET",
+        "url": "https://confluencr-assessment-22vd.onrender.com/",
+        "body": null
+      },
+      "response": {
+        "status_code": 200,
+        "status": "OK",
+        "time_ms": 373,
+        "body": {
+          "status": "HEALTHY",
+          "current_time": "2026-11-03T08:25:29Z"
+        }
+      },
+      "assertions": [
+        {
+          "name": "200 OK",
+          "passed": true
+        },
+        {
+          "name": "status is HEALTHY",
+          "passed": true
+        },
+        {
+          "name": "current_time is UTC ISO 8601 with Z",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "2. Send webhook (new transaction)",
+      "request": {
+        "method": "POST",
+        "url": "https://confluencr-assessment-22vd.onrender.com/v1/webhooks/transactions",
+        "body": {
+          "transaction_id": "txn_postman_1793694329997",
+          "source_account": "acc_user_789",
+          "destination_account": "acc_merchant_456",
+          "amount": 1500,
+          "currency": "INR"
+        }
+      },
+      "response": {
+        "status_code": 202,
+        "status": "Accepted",
+        "time_ms": 214,
+        "body": {
+          "status": "ACCEPTED",
+          "transaction_id": "txn_postman_1793694329997"
+        }
+      },
+      "assertions": [
+        {
+          "name": "New webhook: 202 Accepted",
+          "passed": true
+        },
+        {
+          "name": "New webhook: body is ACCEPTED with the transaction id",
+          "passed": true
+        },
+        {
+          "name": "New webhook: responded in under 500ms",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "3. Query status immediately (PROCESSING)",
+      "request": {
+        "method": "GET",
+        "url": "https://confluencr-assessment-22vd.onrender.com/v1/transactions/txn_postman_1793694329997",
+        "body": null
+      },
+      "response": {
+        "status_code": 200,
+        "status": "OK",
+        "time_ms": 433,
+        "body": [
+          {
+            "transaction_id": "txn_postman_1793694329997",
+            "source_account": "acc_user_789",
+            "destination_account": "acc_merchant_456",
+            "amount": 1500.0,
+            "currency": "INR",
+            "status": "PROCESSING",
+            "created_at": "2026-11-03T08:25:30Z",
+            "processed_at": null
+          }
+        ]
+      },
+      "assertions": [
+        {
+          "name": "200 OK",
+          "passed": true
+        },
+        {
+          "name": "Response is a one-element array",
+          "passed": true
+        },
+        {
+          "name": "Exactly the 8 public fields, no internal columns",
+          "passed": true
+        },
+        {
+          "name": "transaction_id matches",
+          "passed": true
+        },
+        {
+          "name": "status is PROCESSING",
+          "passed": true
+        },
+        {
+          "name": "processed_at is null while processing",
+          "passed": true
+        },
+        {
+          "name": "amount is the number 1500",
+          "passed": true
+        },
+        {
+          "name": "created_at is UTC ISO 8601 with Z",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "4. Send the same webhook again (duplicate)",
+      "request": {
+        "method": "POST",
+        "url": "https://confluencr-assessment-22vd.onrender.com/v1/webhooks/transactions",
+        "body": {
+          "transaction_id": "txn_postman_1793694329997",
+          "source_account": "acc_user_789",
+          "destination_account": "acc_merchant_456",
+          "amount": 1500,
+          "currency": "INR"
+        }
+      },
+      "response": {
+        "status_code": 202,
+        "status": "Accepted",
+        "time_ms": 130,
+        "body": {
+          "status": "ACCEPTED",
+          "transaction_id": "txn_postman_1793694329997"
+        }
+      },
+      "assertions": [
+        {
+          "name": "Duplicate webhook: 202 Accepted",
+          "passed": true
+        },
+        {
+          "name": "Duplicate webhook: body is ACCEPTED with the transaction id",
+          "passed": true
+        },
+        {
+          "name": "Duplicate webhook: responded in under 500ms",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "5. Query after duplicate (still one, unchanged)",
+      "request": {
+        "method": "GET",
+        "url": "https://confluencr-assessment-22vd.onrender.com/v1/transactions/txn_postman_1793694329997",
+        "body": null
+      },
+      "response": {
+        "status_code": 200,
+        "status": "OK",
+        "time_ms": 122,
+        "body": [
+          {
+            "transaction_id": "txn_postman_1793694329997",
+            "source_account": "acc_user_789",
+            "destination_account": "acc_merchant_456",
+            "amount": 1500.0,
+            "currency": "INR",
+            "status": "PROCESSING",
+            "created_at": "2026-11-03T08:25:30Z",
+            "processed_at": null
+          }
+        ]
+      },
+      "assertions": [
+        {
+          "name": "200 OK",
+          "passed": true
+        },
+        {
+          "name": "Response is a one-element array",
+          "passed": true
+        },
+        {
+          "name": "created_at unchanged by the duplicate",
+          "passed": true
+        },
+        {
+          "name": "still PROCESSING",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "6. Wait ~32s, query again (PROCESSED)",
+      "request": {
+        "method": "GET",
+        "url": "https://confluencr-assessment-22vd.onrender.com/v1/transactions/txn_postman_1793694329997",
+        "body": null
+      },
+      "response": {
+        "status_code": 200,
+        "status": "OK",
+        "time_ms": 379,
+        "body": [
+          {
+            "transaction_id": "txn_postman_1793694329997",
+            "source_account": "acc_user_789",
+            "destination_account": "acc_merchant_456",
+            "amount": 1500.0,
+            "currency": "INR",
+            "status": "PROCESSED",
+            "created_at": "2026-11-03T08:25:30Z",
+            "processed_at": "2026-11-03T08:26:00Z"
+          }
+        ]
+      },
+      "assertions": [
+        {
+          "name": "200 OK",
+          "passed": true
+        },
+        {
+          "name": "Response is a one-element array",
+          "passed": true
+        },
+        {
+          "name": "status is PROCESSED",
+          "passed": true
+        },
+        {
+          "name": "processed_at is UTC ISO 8601 with Z",
+          "passed": true
+        },
+        {
+          "name": "Processed about 30s after created (29-60s), took 30s",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "7. Send the webhook again after processing (late duplicate)",
+      "request": {
+        "method": "POST",
+        "url": "https://confluencr-assessment-22vd.onrender.com/v1/webhooks/transactions",
+        "body": {
+          "transaction_id": "txn_postman_1793694329997",
+          "source_account": "acc_user_789",
+          "destination_account": "acc_merchant_456",
+          "amount": 1500,
+          "currency": "INR"
+        }
+      },
+      "response": {
+        "status_code": 202,
+        "status": "Accepted",
+        "time_ms": 162,
+        "body": {
+          "status": "ACCEPTED",
+          "transaction_id": "txn_postman_1793694329997"
+        }
+      },
+      "assertions": [
+        {
+          "name": "Late duplicate: 202 Accepted",
+          "passed": true
+        },
+        {
+          "name": "Late duplicate: body is ACCEPTED with the transaction id",
+          "passed": true
+        },
+        {
+          "name": "Late duplicate: responded in under 500ms",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "8. Query after late duplicate (processed_at stable)",
+      "request": {
+        "method": "GET",
+        "url": "https://confluencr-assessment-22vd.onrender.com/v1/transactions/txn_postman_1793694329997",
+        "body": null
+      },
+      "response": {
+        "status_code": 200,
+        "status": "OK",
+        "time_ms": 141,
+        "body": [
+          {
+            "transaction_id": "txn_postman_1793694329997",
+            "source_account": "acc_user_789",
+            "destination_account": "acc_merchant_456",
+            "amount": 1500.0,
+            "currency": "INR",
+            "status": "PROCESSED",
+            "created_at": "2026-11-03T08:25:30Z",
+            "processed_at": "2026-11-03T08:26:00Z"
+          }
+        ]
+      },
+      "assertions": [
+        {
+          "name": "200 OK",
+          "passed": true
+        },
+        {
+          "name": "Response is a one-element array",
+          "passed": true
+        },
+        {
+          "name": "still PROCESSED",
+          "passed": true
+        },
+        {
+          "name": "processed_at unchanged (not reprocessed)",
+          "passed": true
+        },
+        {
+          "name": "created_at unchanged",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "9. Query unknown transaction (404)",
+      "request": {
+        "method": "GET",
+        "url": "https://confluencr-assessment-22vd.onrender.com/v1/transactions/txn_does_not_exist_1793694364",
+        "body": null
+      },
+      "response": {
+        "status_code": 404,
+        "status": "Not Found",
+        "time_ms": 162,
+        "body": {
+          "detail": "Transaction not found"
+        }
+      },
+      "assertions": [
+        {
+          "name": "404 Not Found",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "10. Invalid payload: missing transaction_id (422)",
+      "request": {
+        "method": "POST",
+        "url": "https://confluencr-assessment-22vd.onrender.com/v1/webhooks/transactions",
+        "body": {
+          "source_account": "acc_user_789",
+          "destination_account": "acc_merchant_456",
+          "amount": 1500,
+          "currency": "INR"
+        }
+      },
+      "response": {
+        "status_code": 422,
+        "status": "Unprocessable Entity",
+        "time_ms": 120,
+        "body": {
+          "detail": [
+            {
+              "type": "missing",
+              "loc": [
+                "body",
+                "transaction_id"
+              ],
+              "msg": "Field required",
+              "input": {
+                "source_account": "acc_user_789",
+                "destination_account": "acc_merchant_456",
+                "amount": 1500,
+                "currency": "INR"
+              }
+            }
+          ]
+        }
+      },
+      "assertions": [
+        {
+          "name": "422 Unprocessable Entity",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "11. Invalid payload: negative amount (422)",
+      "request": {
+        "method": "POST",
+        "url": "https://confluencr-assessment-22vd.onrender.com/v1/webhooks/transactions",
+        "body": {
+          "transaction_id": "txn_invalid_1793694364",
+          "source_account": "acc_user_789",
+          "destination_account": "acc_merchant_456",
+          "amount": -5,
+          "currency": "INR"
+        }
+      },
+      "response": {
+        "status_code": 422,
+        "status": "Unprocessable Entity",
+        "time_ms": 139,
+        "body": {
+          "detail": [
+            {
+              "type": "greater_than",
+              "loc": [
+                "body",
+                "amount"
+              ],
+              "msg": "Input should be greater than 0",
+              "input": -5,
+              "ctx": {
+                "gt": 0
+              }
+            }
+          ]
+        }
+      },
+      "assertions": [
+        {
+          "name": "422 Unprocessable Entity",
+          "passed": true
+        }
+      ]
+    }
+  ]
+}

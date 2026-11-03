@@ -1,0 +1,495 @@
+{
+  "info": {
+    "name": "Confluencr Transaction Webhook Service",
+    "description": "End-to-end checks for the assessment's success criteria: health, single transaction processed after ~30s, duplicate prevention, response contract, 404 and 422.\n\nRun the whole collection in order with the Collection Runner (it uses shared variables). Request 6 waits 32 seconds on purpose. Change `baseUrl` to http://localhost:8000 to test a local stack.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Health check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test(\"status is HEALTHY\", () => pm.expect(b.status).to.eql(\"HEALTHY\"));",
+              "pm.test(\"current_time is UTC ISO 8601 with Z\", () => pm.expect(b.current_time).to.match(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$/));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            ""
+          ]
+        },
+        "description": "GET / returns HEALTHY and the current UTC time. It does not depend on the database or Redis."
+      }
+    },
+    {
+      "name": "2. Send webhook (new transaction)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set(\"txnId\", \"txn_postman_\" + Date.now());"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"New webhook: 202 Accepted\", () => pm.response.to.have.status(202));",
+              "pm.test(\"New webhook: body is ACCEPTED with the transaction id\", () => {",
+              "    const b = pm.response.json();",
+              "    pm.expect(b.status).to.eql(\"ACCEPTED\");",
+              "    pm.expect(b.transaction_id).to.eql(pm.collectionVariables.get(\"txnId\"));",
+              "});",
+              "pm.test(\"New webhook: responded in under 500ms\", () => pm.expect(pm.response.responseTime).to.be.below(500));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v1/webhooks/transactions",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "webhooks",
+            "transactions"
+          ]
+        },
+        "description": "Generates a unique transaction_id, then sends the webhook. Expects 202 within 500ms.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transaction_id\": \"{{txnId}}\",\n  \"source_account\": \"acc_user_789\",\n  \"destination_account\": \"acc_merchant_456\",\n  \"amount\": 1500,\n  \"currency\": \"INR\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "3. Query status immediately (PROCESSING)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test(\"Response is a one-element array\", () => pm.expect(body).to.be.an(\"array\").with.lengthOf(1));",
+              "const t = body[0];",
+              "pm.test(\"Exactly the 8 public fields, no internal columns\", () => pm.expect(Object.keys(t).sort()).to.eql([\"amount\",\"created_at\",\"currency\",\"destination_account\",\"processed_at\",\"source_account\",\"status\",\"transaction_id\"]));",
+              "pm.test(\"transaction_id matches\", () => pm.expect(t.transaction_id).to.eql(pm.collectionVariables.get(\"txnId\")));",
+              "pm.test(\"status is PROCESSING\", () => pm.expect(t.status).to.eql(\"PROCESSING\"));",
+              "pm.test(\"processed_at is null while processing\", () => pm.expect(t.processed_at).to.be.null);",
+              "pm.test(\"amount is the number 1500\", () => pm.expect(t.amount).to.eql(1500));",
+              "pm.test(\"created_at is UTC ISO 8601 with Z\", () => pm.expect(t.created_at).to.match(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$/));",
+              "pm.collectionVariables.set(\"createdAt\", t.created_at);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/v1/transactions/{{txnId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "transactions",
+            "{{txnId}}"
+          ]
+        },
+        "description": "The transaction is stored before the 202, so it is immediately queryable as PROCESSING."
+      }
+    },
+    {
+      "name": "4. Send the same webhook again (duplicate)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Duplicate webhook: 202 Accepted\", () => pm.response.to.have.status(202));",
+              "pm.test(\"Duplicate webhook: body is ACCEPTED with the transaction id\", () => {",
+              "    const b = pm.response.json();",
+              "    pm.expect(b.status).to.eql(\"ACCEPTED\");",
+              "    pm.expect(b.transaction_id).to.eql(pm.collectionVariables.get(\"txnId\"));",
+              "});",
+              "pm.test(\"Duplicate webhook: responded in under 500ms\", () => pm.expect(pm.response.responseTime).to.be.below(500));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v1/webhooks/transactions",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "webhooks",
+            "transactions"
+          ]
+        },
+        "description": "Same transaction_id. Expects 202 and no new row.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transaction_id\": \"{{txnId}}\",\n  \"source_account\": \"acc_user_789\",\n  \"destination_account\": \"acc_merchant_456\",\n  \"amount\": 1500,\n  \"currency\": \"INR\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "5. Query after duplicate (still one, unchanged)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test(\"Response is a one-element array\", () => pm.expect(body).to.be.an(\"array\").with.lengthOf(1));",
+              "const t = body[0];",
+              "pm.test(\"created_at unchanged by the duplicate\", () => pm.expect(t.created_at).to.eql(pm.collectionVariables.get(\"createdAt\")));",
+              "pm.test(\"still PROCESSING\", () => pm.expect(t.status).to.eql(\"PROCESSING\"));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/v1/transactions/{{txnId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "transactions",
+            "{{txnId}}"
+          ]
+        },
+        "description": "The duplicate did not create a second transaction or reset any field."
+      }
+    },
+    {
+      "name": "6. Wait ~32s, query again (PROCESSED)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Wait for the 30-second background processing before querying.",
+              "setTimeout(() => {}, 32000);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test(\"Response is a one-element array\", () => pm.expect(body).to.be.an(\"array\").with.lengthOf(1));",
+              "const t = body[0];",
+              "pm.test(\"status is PROCESSED\", () => pm.expect(t.status).to.eql(\"PROCESSED\"));",
+              "pm.test(\"processed_at is UTC ISO 8601 with Z\", () => pm.expect(t.processed_at).to.match(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$/));",
+              "const seconds = (Date.parse(t.processed_at) - Date.parse(t.created_at)) / 1000;",
+              "console.log(\"processing took \" + seconds + \"s\");",
+              "pm.test(\"Processed about 30s after created (29-60s), took \" + seconds + \"s\", () => pm.expect(seconds).to.be.within(29, 60));",
+              "pm.collectionVariables.set(\"processedAt\", t.processed_at);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/v1/transactions/{{txnId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "transactions",
+            "{{txnId}}"
+          ]
+        },
+        "description": "The pre-request script waits 32 seconds. The worker should have finished the simulated 30-second processing."
+      }
+    },
+    {
+      "name": "7. Send the webhook again after processing (late duplicate)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Late duplicate: 202 Accepted\", () => pm.response.to.have.status(202));",
+              "pm.test(\"Late duplicate: body is ACCEPTED with the transaction id\", () => {",
+              "    const b = pm.response.json();",
+              "    pm.expect(b.status).to.eql(\"ACCEPTED\");",
+              "    pm.expect(b.transaction_id).to.eql(pm.collectionVariables.get(\"txnId\"));",
+              "});",
+              "pm.test(\"Late duplicate: responded in under 500ms\", () => pm.expect(pm.response.responseTime).to.be.below(500));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v1/webhooks/transactions",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "webhooks",
+            "transactions"
+          ]
+        },
+        "description": "A retry that arrives after processing. Expects 202 and no reprocessing.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transaction_id\": \"{{txnId}}\",\n  \"source_account\": \"acc_user_789\",\n  \"destination_account\": \"acc_merchant_456\",\n  \"amount\": 1500,\n  \"currency\": \"INR\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "8. Query after late duplicate (processed_at stable)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test(\"Response is a one-element array\", () => pm.expect(body).to.be.an(\"array\").with.lengthOf(1));",
+              "const t = body[0];",
+              "pm.test(\"still PROCESSED\", () => pm.expect(t.status).to.eql(\"PROCESSED\"));",
+              "pm.test(\"processed_at unchanged (not reprocessed)\", () => pm.expect(t.processed_at).to.eql(pm.collectionVariables.get(\"processedAt\")));",
+              "pm.test(\"created_at unchanged\", () => pm.expect(t.created_at).to.eql(pm.collectionVariables.get(\"createdAt\")));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/v1/transactions/{{txnId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "transactions",
+            "{{txnId}}"
+          ]
+        },
+        "description": "The late duplicate did not reprocess the transaction."
+      }
+    },
+    {
+      "name": "9. Query unknown transaction (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"404 Not Found\", () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/v1/transactions/txn_does_not_exist_{{$timestamp}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "transactions",
+            "txn_does_not_exist_{{$timestamp}}"
+          ]
+        },
+        "description": "An ID that was never sent returns 404."
+      }
+    },
+    {
+      "name": "10. Invalid payload: missing transaction_id (422)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"422 Unprocessable Entity\", () => pm.response.to.have.status(422));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v1/webhooks/transactions",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "webhooks",
+            "transactions"
+          ]
+        },
+        "description": "Required field missing. Rejected before anything is stored.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"source_account\": \"acc_user_789\",\n  \"destination_account\": \"acc_merchant_456\",\n  \"amount\": 1500,\n  \"currency\": \"INR\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "11. Invalid payload: negative amount (422)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"422 Unprocessable Entity\", () => pm.response.to.have.status(422));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v1/webhooks/transactions",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "webhooks",
+            "transactions"
+          ]
+        },
+        "description": "Amount must be greater than zero.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transaction_id\": \"txn_invalid_{{$timestamp}}\",\n  \"source_account\": \"acc_user_789\",\n  \"destination_account\": \"acc_merchant_456\",\n  \"amount\": -5,\n  \"currency\": \"INR\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://confluencr-assessment-22vd.onrender.com"
+    },
+    {
+      "key": "txnId",
+      "value": ""
+    },
+    {
+      "key": "createdAt",
+      "value": ""
+    },
+    {
+      "key": "processedAt",
+      "value": ""
+    }
+  ]
+}

@@ -40,6 +40,16 @@ python scripts/acceptance_check.py --base-url https://confluencr-assessment-22vd
 
 **15 of 15 checks passed.**
 
+### Postman collection
+
+The same scenario is available as a Postman collection: [`postman/confluencr.postman_collection.json`](./postman/confluencr.postman_collection.json). It has 11 requests and 37 assertions: health, new webhook, immediate `PROCESSING`, duplicate, ~30s wait to `PROCESSED`, late duplicate, `404` and two `422` cases. Import it into Postman and run it with the Collection Runner, or from the command line:
+
+```bash
+npx newman run docs/postman/confluencr.postman_collection.json
+```
+
+Live run result: **37 of 37 assertions passed**, with processing taking 30s and every response under 500ms. Per-request results (request, status, time, response body, each assertion): [`postman/results-summary.json`](./postman/results-summary.json). Raw Newman export: [`postman/results-live.json`](./postman/results-live.json).
+
 ## Automated test suite
 
 CI runs on every push ([workflow](../.github/workflows/ci.yml)) against a real PostgreSQL database. The end-to-end job also uses a real Redis and Celery worker.
