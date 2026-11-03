@@ -4,9 +4,9 @@ This file defines how AI assistants must work in this repository. Read it before
 
 ## Read order
 
-1. `ASSESSMENT_QUESTION.md` — the original brief.
-2. `SPEC.md` — requirements, API contract, acceptance criteria.
-3. `PLAN.md` — architecture, phases, verification steps.
+1. `docs/ASSESSMENT_QUESTION.md` — the original brief.
+2. `docs/SPEC.md` — requirements, API contract, acceptance criteria.
+3. `docs/PLAN.md` — architecture, phases, verification steps.
 4. This file — coding rules and invariants.
 
 If these conflict, stop and ask. Do not silently invent requirements.
@@ -45,7 +45,7 @@ If these conflict, stop and ask. Do not silently invent requirements.
 - Comments only where the reason is non-obvious. Do not narrate what the code already says.
 - Raise specific exceptions; never use bare `except:`. Roll back database sessions on errors.
 - Use enums/constants instead of magic strings (`PROCESSING`, `PROCESSED`, event names).
-- Preserve the public API contract. If a contract change is needed, update `SPEC.md` first.
+- Preserve the public API contract. If a contract change is needed, update `docs/SPEC.md` first.
 - No dead code, debug prints, or commented-out blocks.
 
 ## Testing rules
@@ -61,11 +61,11 @@ If these conflict, stop and ask. Do not silently invent requirements.
 
 ## Workflow
 
-1. Read `SPEC.md` and `PLAN.md`; pick the next unchecked phase.
+1. Read `docs/SPEC.md` and `docs/PLAN.md`; pick the next unchecked phase.
 2. State what you are about to change and why.
 3. Implement in small steps; keep unrelated files untouched.
 4. Run lint, types (if configured), and relevant tests.
-5. Update `PLAN.md` checkboxes and any affected docs.
+5. Update `docs/PLAN.md` checkboxes and any affected docs.
 6. Report what changed, what was verified, and what remains.
 7. Do not commit, push, or create a PR unless the user explicitly asks.
 

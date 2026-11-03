@@ -4,7 +4,7 @@ A Python service that accepts transaction webhooks, acknowledges them in well un
 
 **Live:** https://confluencr-assessment-22vd.onrender.com (Render free tier, Singapore)
 
-**Test results:** [`TEST_RESULTS.md`](./TEST_RESULTS.md) records the live and local runs: 15/15 acceptance checks on the live service, duplicate prevention, no lost transactions, and latency, including a controlled experiment showing that burst latency on the free tier is caused by its 0.1 CPU allowance.
+**Test results:** [`TEST_RESULTS.md`](./docs/TEST_RESULTS.md) records the live and local runs: 15/15 acceptance checks on the live service, duplicate prevention, no lost transactions, and latency, including a controlled experiment showing that burst latency on the free tier is caused by its 0.1 CPU allowance.
 
 ## Architecture
 
@@ -250,8 +250,8 @@ For an always-on production deployment, move the worker to a paid background wor
 
 ## Project documents
 
-- [`ASSESSMENT_QUESTION.md`](./ASSESSMENT_QUESTION.md) — original brief.
-- [`SPEC.md`](./SPEC.md) — requirements, API contract, acceptance criteria.
-- [`PLAN.md`](./PLAN.md) — architecture, phases, testing, deployment.
-- [`TEST_RESULTS.md`](./TEST_RESULTS.md) — live and local test results, latency measurements, CPU experiment.
+- [`ASSESSMENT_QUESTION.md`](./docs/ASSESSMENT_QUESTION.md) — original brief.
+- [`SPEC.md`](./docs/SPEC.md) — requirements, API contract, acceptance criteria.
+- [`PLAN.md`](./docs/PLAN.md) — architecture, phases, testing, deployment.
+- [`TEST_RESULTS.md`](./docs/TEST_RESULTS.md) — live and local test results, latency measurements, CPU experiment.
 - [`CLAUDE.md`](./CLAUDE.md) — AI engineering rules and invariants.

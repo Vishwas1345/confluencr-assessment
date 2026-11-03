@@ -42,7 +42,7 @@ python scripts/acceptance_check.py --base-url https://confluencr-assessment-22vd
 
 ## Automated test suite
 
-CI runs on every push ([workflow](./.github/workflows/ci.yml)) against a real PostgreSQL database. The end-to-end job also uses a real Redis and Celery worker.
+CI runs on every push ([workflow](../.github/workflows/ci.yml)) against a real PostgreSQL database. The end-to-end job also uses a real Redis and Celery worker.
 
 | Step | Result |
 | --- | --- |
@@ -99,7 +99,7 @@ To confirm that CPU is the only factor, the identical stack was run locally in D
 | 0.5 CPU | Render Starter | 222ms | 372ms | ✅ |
 | 0.1 CPU | Render Free (current) | 4,499ms | 5,803ms | ❌ |
 
-All three runs used the same code, database and test (50 webhooks, 20 at a time). At 0.1 CPU the local result matches the live one, and with 0.5 CPU the same burst stays under 500ms. Moving to a paid instance is a one-line change in [`render.yaml`](./render.yaml) (`plan: starter`) and needs no code changes. The architecture also allows the worker to run as a separate service, so it would no longer share CPU with the API.
+All three runs used the same code, database and test (50 webhooks, 20 at a time). At 0.1 CPU the local result matches the live one, and with 0.5 CPU the same burst stays under 500ms. Moving to a paid instance is a one-line change in [`render.yaml`](../render.yaml) (`plan: starter`) and needs no code changes. The architecture also allows the worker to run as a separate service, so it would no longer share CPU with the API.
 
 Reproduce it:
 

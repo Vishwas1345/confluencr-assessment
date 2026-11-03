@@ -126,8 +126,8 @@ confluencr-assessment/
 ├── .github/workflows/{ci.yml,keepalive.yml}
 ├── Dockerfile, .dockerignore, docker-compose.yml
 ├── render.yaml, pyproject.toml, .env.example, .gitignore
-├── CLAUDE.md, README.md, TEST_RESULTS.md
-├── ASSESSMENT_QUESTION.md, SPEC.md, PLAN.md
+├── CLAUDE.md, README.md
+├── docs/ (ASSESSMENT_QUESTION.md, SPEC.md, PLAN.md, TEST_RESULTS.md)
 ```
 
 ## 4. Data model and migrations
