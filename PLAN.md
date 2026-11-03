@@ -2,11 +2,11 @@
 
 | Field | Value |
 | --- | --- |
-| Status | Phases 0–5 complete; Phase 6 in progress |
+| Status | Phases 0–5 complete; Phase 6 deployed and tested; Phase 7 in progress |
 | Source specification | [`SPEC.md`](./SPEC.md) |
 | Source brief | [`ASSESSMENT_QUESTION.md`](./ASSESSMENT_QUESTION.md) |
 | Stack | Python 3.12, FastAPI, PostgreSQL, Celery, Redis, Render |
-| Last updated | 2026-11-02 |
+| Last updated | 2026-11-03 |
 
 This plan turns the specification into architecture, modules, ordered tasks, and verification steps. It does not change the API contract or acceptance criteria. If implementation forces a requirement change, update `SPEC.md` first, then this plan.
 
@@ -14,7 +14,6 @@ This plan turns the specification into architecture, modules, ordered tasks, and
 
 - Execute phases in order; do not start a phase until the previous exit criteria pass.
 - `AC-*` references point to `SPEC.md` section 10.
-- `AGENTS.md` will hold commands and invariants so future sessions can resume with minimal context.
 - Commit at the end of each phase with a descriptive message.
 
 ## 2. Architecture
@@ -127,7 +126,7 @@ confluencr-assessment/
 ├── .github/workflows/{ci.yml,keepalive.yml}
 ├── Dockerfile, .dockerignore, docker-compose.yml
 ├── render.yaml, pyproject.toml, .env.example, .gitignore
-├── AGENTS.md, README.md
+├── CLAUDE.md, README.md, TEST_RESULTS.md
 ├── ASSESSMENT_QUESTION.md, SPEC.md, PLAN.md
 ```
 
@@ -179,7 +178,7 @@ Indexes:
 - [x] Create `Dockerfile` (`python:3.12-slim`, non-root user, install package, default web command).
 - [x] Create `.dockerignore`.
 - [x] Create `docker-compose.yml` with PostgreSQL 16, Redis 7, API, and worker.
-- [x] Create `AGENTS.md` with purpose, commands, invariants, and verification checklist.
+- [x] Create `CLAUDE.md` with invariants, coding rules, and verification checklist (`AGENTS.md` was removed on 2026-11-03; it duplicated `CLAUDE.md` and the README).
 - [x] Create README skeleton and GitHub Actions CI skeleton.
 - [x] Verify `docker compose up -d postgres redis` and Python install/lint.
 
@@ -244,14 +243,14 @@ Indexes:
 
 ### Phase 6 — Deploy to Render
 
-- [ ] Confirm `gh auth status`; create the public repository and push.
+- [x] Confirm `gh auth status`; create the public repository and push.
 - [x] Verify current Render Blueprint schema and plan names; `render.yaml` passes the published JSON Schema.
 - [x] Use the free tier per user decision; document that free web services still spin down/idle and have no background workers.
 - [x] Create `render.yaml`: free Docker web (health `/`), free PostgreSQL, free Key Value, env wiring, Singapore region.
 - [x] Add `app/render_start.py` to run migrations and supervise API + Celery worker + beat in the free web service.
 - [x] Add `.github/workflows/keepalive.yml` (enabled by the `RENDER_BASE_URL` repository variable).
-- [ ] Deploy the Blueprint and confirm the web service is healthy.
-- [ ] Run acceptance and load scripts against the public URL.
+- [x] Deploy the Blueprint and confirm the web service is healthy (https://confluencr-assessment-22vd.onrender.com).
+- [x] Run acceptance and load scripts against the public URL (results in `TEST_RESULTS.md`).
 - [ ] Confirm the web instance stays warm; record live URL, timings, and platform caveats in README.
 
 **Exit:** deployed service passes the same acceptance checks as local, including duplicates, ~30-second processing, fast acknowledgement, and recovery. Free-tier platform limits are documented.

@@ -2,7 +2,9 @@
 
 A Python service that accepts transaction webhooks, acknowledges them in well under 500ms, and processes them reliably in the background after a simulated 30-second delay. PostgreSQL is the source of truth and the recovery mechanism; Redis and Celery are the asynchronous transport.
 
-Status: implementation complete; free-tier Render Blueprint prepared. See [Deployment on Render](#deployment-on-render) to apply it and set the live URL.
+**Live:** https://confluencr-assessment-22vd.onrender.com (Render free tier, Singapore)
+
+**Test results:** [`TEST_RESULTS.md`](./TEST_RESULTS.md) records the live and local runs: 15/15 acceptance checks on the live service, duplicate prevention, no lost transactions, and latency, including a controlled experiment showing that burst latency on the free tier is caused by its 0.1 CPU allowance.
 
 ## Architecture
 
@@ -221,7 +223,7 @@ python -m app.render_start
 
 `app/render_start.py` runs `alembic upgrade head`, starts the API on `$PORT`, and supervises the Celery worker. On Linux the worker embeds beat with `--beat`; on Windows the supervisor starts beat separately. Migrations run on every start because free instances can restart at any time.
 
-After the first deploy, set the repository variable `RENDER_BASE_URL` to the service URL (for example `https://confluencr-assessment.onrender.com`). This enables `.github/workflows/keepalive.yml`, which pings `/` every five minutes to keep the free web service from spinning down. The workflow is skipped while the variable is empty.
+After the first deploy, set the repository variable `RENDER_BASE_URL` to the service URL (`https://confluencr-assessment-22vd.onrender.com`). This enables `.github/workflows/keepalive.yml`, which pings `/` every five minutes to keep the free web service from spinning down. The workflow is skipped while the variable is empty.
 
 ### Free-tier constraints
 
@@ -251,5 +253,5 @@ For an always-on production deployment, move the worker to a paid background wor
 - [`ASSESSMENT_QUESTION.md`](./ASSESSMENT_QUESTION.md) — original brief.
 - [`SPEC.md`](./SPEC.md) — requirements, API contract, acceptance criteria.
 - [`PLAN.md`](./PLAN.md) — architecture, phases, testing, deployment.
+- [`TEST_RESULTS.md`](./TEST_RESULTS.md) — live and local test results, latency measurements, CPU experiment.
 - [`CLAUDE.md`](./CLAUDE.md) — AI engineering rules and invariants.
-- [`AGENTS.md`](./AGENTS.md) — project context and commands.
